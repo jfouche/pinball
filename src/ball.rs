@@ -41,7 +41,7 @@ fn spawn_ball(
                     .into(),
                 ),
                 material: debug_material,
-                transform: Transform::from_xyz(0.0, 0.0, 0.0),
+                transform: Transform::from_xyz(0.0, BALL_RADIUS, 0.0),
                 ..default()
             },
         ))

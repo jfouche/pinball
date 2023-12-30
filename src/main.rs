@@ -3,6 +3,7 @@ use bevy_rapier3d::prelude::*;
 
 mod ball;
 mod camera;
+mod paddle;
 
 fn main() {
     App::new()
@@ -22,7 +23,7 @@ fn main() {
             RapierPhysicsPlugin::<NoUserData>::default(),
             RapierDebugRenderPlugin::default(),
         ))
-        .add_plugins((camera::CameraPlugin, ball::BallPlugin))
+        .add_plugins((camera::CameraPlugin, ball::BallPlugin, paddle::PaddlePlugin))
         // STARTUP
         // .add_startup_system(load_font)
         .add_systems(Startup, (spawn_light, spawn_ground))
@@ -47,6 +48,9 @@ fn spawn_light(mut commands: Commands) {
     });
 }
 
+#[derive(Component)]
+pub struct Ground;
+
 fn spawn_ground(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -55,6 +59,7 @@ fn spawn_ground(
     // ground plane
     commands
         .spawn((
+            Ground,
             Name::new("Ground"),
             PbrBundle {
                 mesh: meshes.add(shape::Plane::from_size(50.0).into()),
