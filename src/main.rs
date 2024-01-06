@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
 mod ball;
+mod board;
 mod camera;
 mod paddle;
 
@@ -23,7 +24,12 @@ fn main() {
             RapierPhysicsPlugin::<NoUserData>::default(),
             RapierDebugRenderPlugin::default(),
         ))
-        .add_plugins((camera::CameraPlugin, ball::BallPlugin, paddle::PaddlePlugin))
+        .add_plugins((
+            camera::CameraPlugin,
+            // board::BoardPlugin,
+            // ball::BallPlugin,
+            paddle::PaddlePlugin,
+        ))
         // STARTUP
         // .add_startup_system(load_font)
         .add_systems(Startup, (spawn_light, spawn_ground))
@@ -62,10 +68,10 @@ fn spawn_ground(
             Ground,
             Name::new("Ground"),
             PbrBundle {
-                mesh: meshes.add(shape::Plane::from_size(50.0).into()),
-                material: materials.add(Color::SILVER.into()),
+                mesh: meshes.add(shape::Plane::from_size(10.0).into()),
+                // material: materials.add(Color::SILVER.into()),
                 ..default()
             },
         ))
-        .insert((RigidBody::Fixed, Collider::cuboid(25., 0., 25.)));
+        .insert((RigidBody::Fixed, Collider::cuboid(5., 0., 5.)));
 }

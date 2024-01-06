@@ -31,12 +31,13 @@ impl Default for PanOrbitCamera {
 }
 
 fn spawn_camera(mut commands: Commands) {
-    let translation = Vec3::new(-10.0, 23., 52.0);
+    let translation = Vec3::new(15.0, 5., 42.0);
     let radius = translation.length();
 
     commands.spawn((
         Camera3dBundle {
-            transform: Transform::from_translation(translation).looking_at(Vec3::ZERO, Vec3::Y),
+            transform: Transform::from_translation(translation)
+                .looking_at(Vec3::new(13.0, 1.0, 1.0), Vec3::Y),
             ..Default::default()
         },
         PanOrbitCamera {
