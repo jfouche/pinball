@@ -54,6 +54,12 @@ fn spawn_light(mut commands: Commands) {
     });
 }
 
+const GROUND_SIZE: Vec3 = Vec3 {
+    x: 30.0,
+    y: 0.2,
+    z: 30.0,
+};
+
 #[derive(Component)]
 pub struct Ground;
 
@@ -67,11 +73,22 @@ fn spawn_ground(
         .spawn((
             Ground,
             Name::new("Ground"),
-            PbrBundle {
-                mesh: meshes.add(shape::Plane::from_size(10.0).into()),
-                // material: materials.add(Color::SILVER.into()),
-                ..default()
-            },
+            // PbrBundle {
+            //     mesh: meshes
+            //         .add(shape::Box::new(GROUND_SIZE.x, GROUND_SIZE.y, GROUND_SIZE.z).into()),
+            //     transform: Transform::from_xyz(0.0, -GROUND_SIZE.y / 2.0, 0.),
+
+            //     // material: materials.add(Color::SILVER.into()),
+            //     ..default()
+            // },
+            Transform::from_xyz(0.0, -GROUND_SIZE.y / 2.0, 0.),
         ))
-        .insert((RigidBody::Fixed, Collider::cuboid(5., 0., 5.)));
+        .insert((
+            RigidBody::Fixed,
+            Collider::cuboid(
+                GROUND_SIZE.x / 2.0,
+                GROUND_SIZE.y / 2.0,
+                GROUND_SIZE.z / 2.0,
+            ),
+        ));
 }
