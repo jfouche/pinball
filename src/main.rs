@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
+use paddle::Paddle;
 
 mod ball;
 mod board;
@@ -19,20 +20,17 @@ fn main() {
                 })
                 .set(ImagePlugin::default_nearest()),
         )
-        .add_plugins((
-            bevy_inspector_egui::quick::WorldInspectorPlugin::new(),
-            RapierPhysicsPlugin::<NoUserData>::default(),
-            RapierDebugRenderPlugin::default(),
-        ))
+        .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
+        .add_plugins(DebugPlugin)
         .add_plugins((
             camera::CameraPlugin,
-            // board::BoardPlugin,
+            board::BoardPlugin,
             // ball::BallPlugin,
             paddle::PaddlePlugin,
         ))
         // STARTUP
         // .add_startup_system(load_font)
-        .add_systems(Startup, (spawn_light, spawn_ground))
+        .add_systems(Startup, spawn_light)
         .run();
 }
 
@@ -54,41 +52,31 @@ fn spawn_light(mut commands: Commands) {
     });
 }
 
-const GROUND_SIZE: Vec3 = Vec3 {
-    x: 30.0,
-    y: 0.2,
-    z: 30.0,
-};
+struct DebugPlugin;
+impl Plugin for DebugPlugin {
+    fn build(&self, app: &mut App) {
+        app.insert_resource(Time::<Fixed>::from_seconds(1.0))
+            .add_plugins((
+                bevy_inspector_egui::quick::WorldInspectorPlugin::new(),
+                RapierDebugRenderPlugin::default(),
+            ))
+            .add_systems(FixedUpdate, debug);
+    }
+}
 
-#[derive(Component)]
-pub struct Ground;
-
-fn spawn_ground(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+#[allow(dead_code, unused_variables)]
+fn debug(
+    q_paddles: Query<&Transform, With<Paddle>>,
+    q_joint: Query<&ImpulseJoint>,
+    q_collider: Query<&Collider, With<Paddle>>,
 ) {
-    // ground plane
-    commands
-        .spawn((
-            Ground,
-            Name::new("Ground"),
-            // PbrBundle {
-            //     mesh: meshes
-            //         .add(shape::Box::new(GROUND_SIZE.x, GROUND_SIZE.y, GROUND_SIZE.z).into()),
-            //     transform: Transform::from_xyz(0.0, -GROUND_SIZE.y / 2.0, 0.),
-
-            //     // material: materials.add(Color::SILVER.into()),
-            //     ..default()
-            // },
-            Transform::from_xyz(0.0, -GROUND_SIZE.y / 2.0, 0.),
-        ))
-        .insert((
-            RigidBody::Fixed,
-            Collider::cuboid(
-                GROUND_SIZE.x / 2.0,
-                GROUND_SIZE.y / 2.0,
-                GROUND_SIZE.z / 2.0,
-            ),
-        ));
+    for paddle_transform in q_paddles.iter() {
+        info!("DEBUG paddle pos: {paddle_transform:?}");
+    }
+    // if let Ok(joint) = q_joint.get_single() {
+    //     info!("DEBUG joint pos: {joint:?}");
+    // }
+    // if let Ok(collider) = q_collider.get_single() {
+    //     info!("DEBUG joint pos: {collider:?}");
+    // }
 }
