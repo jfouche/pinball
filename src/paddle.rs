@@ -5,14 +5,12 @@ pub struct PaddlePlugin;
 
 impl Plugin for PaddlePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (move_paddle,));
+        app.add_systems(Update, (move_paddle, set_motor_pos));
     }
 }
 
 #[derive(Clone, Component)]
-pub struct Paddle {
-    pos: Vec3,
-}
+pub struct Paddle;
 
 impl Paddle {
     const SIZE: Vec3 = Vec3::new(5.0, 0.5, 2.0);
@@ -31,6 +29,12 @@ impl Paddle {
         Self::SIZE.z / 2.0
     }
 
+    fn dx() -> f32 {
+        // -4.0 * Self::hx() / 5.0
+        -Self::hx()
+    }
+
+    #[allow(dead_code, unused_variables)]
     fn shape() -> impl Into<Mesh> {
         shape::Box::new(Self::SIZE.x, Self::SIZE.y, Self::SIZE.z)
     }
@@ -39,75 +43,78 @@ impl Paddle {
         Collider::cuboid(Self::hx(), Self::hy(), Self::hz())
     }
 
-    fn transform(&self) -> Transform {
-        Transform::from_xyz(self.pos.x, Self::hy() + Self::SPACE, self.pos.z)
+    fn transform(pos: &Vec3) -> Transform {
+        Transform::from_xyz(pos.x + Self::dx(), Self::hy() + Self::SPACE, pos.z)
     }
 
-    fn joint(&self) -> impl Into<GenericJoint> {
-        let dx = -4.0 * Self::hx() / 5.0;
-        let x = self.pos.x;
-        let z = self.pos.z;
+    fn joint(pos: &Vec3) -> impl Into<GenericJoint> {
+        // parent entity anchor position
+        let xp = pos.x;
+        let yp = 0.0;
+        let zp = pos.z;
+        let parent_pos = Vec3::new(xp, yp, zp);
+        // paddle anchor position
+        let x = -Self::hx(); // + Self::dx();
+        let y = -Self::SPACE - Self::hy();
+        let z = 0.0;
+        let paddle_pos = Vec3::new(x, y, z);
+        info!("Paddle::joint({pos}) : parent={parent_pos} paddle={paddle_pos}");
         RevoluteJointBuilder::new(Vec3::Y)
-            .local_anchor1(Vec3::new(x, 0.0, z))
-            .local_anchor2(Vec3::new(x - dx, -Self::SPACE - Self::hy(), z))
+            .local_anchor1(parent_pos)
+            .local_anchor2(paddle_pos)
             .motor_model(MotorModel::AccelerationBased)
             .motor_velocity(0.0, 1.0)
     }
 }
 
 pub fn spawn_paddle(builder: &mut ChildBuilder, pos: Vec3) {
-    let paddle = Paddle { pos };
-    let transform = paddle.transform();
-    let impulse_joint = ImpulseJoint::new(builder.parent_entity(), paddle.joint());
+    let board_entity = builder.parent_entity();
     builder
         .spawn((
             Name::new("PADDLE"),
-            paddle,
+            Paddle,
             // PbrBundle {
             //     mesh: meshes.add(Paddle::shape().into()),
             //     transform: Transform::from_xyz(0.0, Paddle::hy() + SPACE, 0.0),
             //     //material: materials.add(Color::BLUE.into()),
             //     ..default()
             // },
-            transform,
+            Paddle::transform(&pos),
         ))
         .insert((
             RigidBody::Dynamic,
             Sleeping::disabled(),
             Paddle::collider(),
-            impulse_joint,
+            ImpulseJoint::new(board_entity, Paddle::joint(&pos)),
         ));
 }
 
 fn move_paddle(mut q_paddles: Query<&mut ImpulseJoint, With<Paddle>>, keys: Res<Input<KeyCode>>) {
     let left = keys.pressed(KeyCode::Left);
     let right = keys.pressed(KeyCode::Right);
-    let (velocity, factor) = if left {
-        (30.0, 1.0)
-    } else if right {
-        (-30.0, 10.0)
-    } else {
-        (0.0, 10.0)
-    };
-    for mut joint in q_paddles.iter_mut() {
-        if let Some(joint) = joint.data.as_revolute_mut() {
-            // info!("move_paddle set_motor_velocity({velocity}, {factor})");
-            joint.set_motor_velocity(velocity, factor);
+    if left || right {
+        let (velocity, factor) = if left { (30.0, 1.0) } else { (-30.0, 10.0) };
+        for mut joint in q_paddles.iter_mut() {
+            if let Some(joint) = joint.data.as_revolute_mut() {
+                // info!("move_paddle set_motor_velocity({velocity}, {factor})");
+                joint.set_motor_velocity(velocity, factor);
+            }
         }
     }
 }
 
-// #[allow(dead_code)]
-// fn set_motor_pos(mut q_paddles: Query<&mut ImpulseJoint, With<Ground>>, keys: Res<Input<KeyCode>>) {
-//     if keys.just_pressed(KeyCode::Space) {
-//         info!("set_motor_position");
-//         let pos = 90.0;
-//         let stiffness = 1.0;
-//         let damping = 1.0;
-//         for mut joint in q_paddles.iter_mut() {
-//             if let Some(joint) = joint.data.as_revolute_mut() {
-//                 joint.set_motor_position(pos, stiffness, damping);
-//             }
-//         }
-//     }
-// }
+fn set_motor_pos(mut q_paddles: Query<&mut ImpulseJoint, With<Paddle>>, keys: Res<Input<KeyCode>>) {
+    if keys.pressed(KeyCode::Space) {
+        let target_pos = 1.5;
+        let target_vel = 80.0;
+        let stiffness = 30.0;
+        let damping = 2000.0;
+        for mut impulse_joint in q_paddles.iter_mut() {
+            if let Some(joint) = impulse_joint.data.as_revolute_mut() {
+                info!("set_motor({target_pos}, {target_vel}, {stiffness}, {damping})");
+                joint.set_motor_position(target_pos, stiffness, damping);
+                // joint.set_motor_velocity(target_vel, 100.0);
+            }
+        }
+    }
+}
