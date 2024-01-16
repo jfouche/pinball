@@ -15,7 +15,7 @@ pub struct Paddle;
 impl Paddle {
     const SIZE: Vec3 = Vec3::new(5.0, 0.5, 2.0);
     /// space between Paddle and board
-    const SPACE: f32 = 2.5;
+    const SPACE: f32 = 0.5;
 
     fn hx() -> f32 {
         Self::SIZE.x / 2.0
@@ -34,7 +34,6 @@ impl Paddle {
         -Self::hx()
     }
 
-    #[allow(dead_code, unused_variables)]
     fn shape() -> impl Into<Mesh> {
         shape::Box::new(Self::SIZE.x, Self::SIZE.y, Self::SIZE.z)
     }
@@ -63,19 +62,24 @@ impl Paddle {
     }
 }
 
-pub fn spawn_paddle(builder: &mut ChildBuilder, pos: Vec3) {
+pub fn spawn_paddle(
+    builder: &mut ChildBuilder,
+    pos: Vec3,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+) {
     let board_entity = builder.parent_entity();
     builder
         .spawn((
             Name::new("PADDLE"),
             Paddle,
-            // PbrBundle {
-            //     mesh: meshes.add(Paddle::shape().into()),
-            //     transform: Transform::from_xyz(0.0, Paddle::hy() + SPACE, 0.0),
-            //     //material: materials.add(Color::BLUE.into()),
-            //     ..default()
-            // },
-            Paddle::transform(&pos),
+            PbrBundle {
+                mesh: meshes.add(Paddle::shape().into()),
+                transform: Paddle::transform(&pos),
+                material: materials.add(Color::BLUE.into()),
+                ..default()
+            },
+            // Paddle::transform(&pos),
         ))
         .insert((
             RigidBody::Dynamic,

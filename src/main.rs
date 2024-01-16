@@ -25,7 +25,7 @@ fn main() {
         .add_plugins((
             camera::CameraPlugin,
             board::BoardPlugin,
-            // ball::BallPlugin,
+            ball::BallPlugin,
             paddle::PaddlePlugin,
         ))
         // STARTUP

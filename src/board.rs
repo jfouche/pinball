@@ -15,7 +15,7 @@ impl Plugin for BoardPlugin {
 pub struct Board;
 
 impl Board {
-    const COLOR: Color = Color::BLUE;
+    const COLOR: Color = Color::PURPLE;
     const SIZE: Vec3 = Vec3 {
         x: 20.0,
         y: 0.2,
@@ -75,7 +75,7 @@ fn spawn_board(
                 Vec3::new(8.0, 0.0, 8.0),
             ];
             for pos in positions {
-                spawn_paddle(builder, pos)
+                spawn_paddle(builder, pos, &mut meshes, &mut materials);
             }
         });
 }
