@@ -4,6 +4,8 @@ use bevy::{
 };
 use bevy_rapier3d::prelude::*;
 
+use crate::config::PinballConfig;
+
 pub struct BallPlugin;
 
 impl Plugin for BallPlugin {
@@ -20,6 +22,7 @@ fn spawn_ball(
     mut meshes: ResMut<Assets<Mesh>>,
     mut images: ResMut<Assets<Image>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    pinball_config: Res<PinballConfig>,
 ) {
     let debug_material = materials.add(StandardMaterial {
         base_color_texture: Some(images.add(uv_debug_texture())),
@@ -41,19 +44,14 @@ fn spawn_ball(
                     .into(),
                 ),
                 material: debug_material,
-                transform: Transform::from_xyz(0.0, BALL_RADIUS, 0.0),
+                transform: Transform::from_translation(pinball_config.board.ball),
                 ..default()
             },
         ))
         .insert((
             RigidBody::Dynamic,
             Collider::ball(BALL_RADIUS),
-            Velocity::default(),
-            ExternalForce::default(),
-            Damping {
-                linear_damping: 0.5,
-                ..Default::default()
-            },
+            ColliderMassProperties::Mass(10.0),
         ));
 }
 

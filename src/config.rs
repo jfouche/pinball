@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::paddle::{Paddle, PaddleType};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Resource, Deserialize, Serialize)]
 pub struct PinballConfig {
     pub board: BoardConfig,
     pub paddles: Vec<PaddleConfig>,
@@ -13,6 +13,8 @@ pub struct PinballConfig {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct BoardConfig {
     pub size: Vec3,
+    pub angle: f32,
+    pub ball: Vec3,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -63,7 +65,9 @@ pub fn load_config() -> PinballConfig {
 pub fn test() {
     let config = PinballConfig {
         board: BoardConfig {
-            size: Vec3::new(20.0, 0.0, 20.0),
+            size: Vec3::new(40.0, 0.0, 40.0),
+            ball: Vec3::new(15.0, 3.0, 0.0),
+            angle: 0.1,
         },
         paddles: vec![
             PaddleConfig {
