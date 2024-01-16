@@ -47,23 +47,19 @@ impl Paddle {
         Transform::from_xyz(pos.x + Self::dx(), Self::hy() + Self::SPACE, pos.z)
     }
 
+    /// Create an joint object, based on :
+    /// - anchor1 (parent position): position on the ground (the `pos` param)
+    /// - anchor2 (paddle position): position of the point of rotation
+    ///
     fn joint(pos: &Vec3) -> impl Into<GenericJoint> {
-        // parent entity anchor position
-        let xp = pos.x;
-        let yp = 0.0;
-        let zp = pos.z;
-        let parent_pos = Vec3::new(xp, yp, zp);
-        // paddle anchor position
-        let x = -Self::hx(); // + Self::dx();
-        let y = -Self::SPACE - Self::hy();
-        let z = 0.0;
-        let paddle_pos = Vec3::new(x, y, z);
-        info!("Paddle::joint({pos}) : parent={parent_pos} paddle={paddle_pos}");
+        // parent entity anchor position, forced y at 0
+        let parent_pos = Vec3::new(pos.x, 0.0, pos.z);
+        // paddle anchor position, left border, at [SPACE] height
+        let paddle_pos = Vec3::new(-Self::hx(), -Self::SPACE - Self::hy(), 0.0);
         RevoluteJointBuilder::new(Vec3::Y)
             .local_anchor1(parent_pos)
             .local_anchor2(paddle_pos)
-            .motor_model(MotorModel::AccelerationBased)
-            .motor_velocity(0.0, 1.0)
+            .limits([-0.4, 0.4])
     }
 }
 
@@ -91,14 +87,14 @@ pub fn spawn_paddle(builder: &mut ChildBuilder, pos: Vec3) {
 
 fn move_paddle(mut q_paddles: Query<&mut ImpulseJoint, With<Paddle>>, keys: Res<Input<KeyCode>>) {
     let left = keys.pressed(KeyCode::Left);
-    let right = keys.pressed(KeyCode::Right);
-    if left || right {
-        let (velocity, factor) = if left { (30.0, 1.0) } else { (-30.0, 10.0) };
-        for mut joint in q_paddles.iter_mut() {
-            if let Some(joint) = joint.data.as_revolute_mut() {
-                // info!("move_paddle set_motor_velocity({velocity}, {factor})");
-                joint.set_motor_velocity(velocity, factor);
-            }
+    // let right = keys.pressed(KeyCode::Right);
+
+    let (velocity, factor) = if left { (300.0, 2.0) } else { (-300.0, 2.0) };
+    for mut impulse_joint in q_paddles.iter_mut() {
+        if let Some(joint) = impulse_joint.data.as_revolute_mut() {
+            // info!("move_paddle set_motor_velocity({velocity}, {factor})");
+            // joint.set_motor(target_pos, target_vel, stiffness, damping)
+            joint.set_motor_velocity(velocity, factor);
         }
     }
 }
