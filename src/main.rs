@@ -5,6 +5,7 @@ use paddle::Paddle;
 mod ball;
 mod board;
 mod camera;
+mod config;
 mod paddle;
 
 fn main() {
@@ -60,7 +61,7 @@ impl Plugin for DebugPlugin {
                 bevy_inspector_egui::quick::WorldInspectorPlugin::new(),
                 RapierDebugRenderPlugin::default(),
             ))
-            .add_systems(Startup, spawn_debug_ui)
+            .add_systems(Startup, (spawn_debug_ui, init_debug))
             .add_systems(FixedUpdate, debug)
             .add_systems(Update, update_debug_ui);
     }
@@ -68,6 +69,10 @@ impl Plugin for DebugPlugin {
 
 #[derive(Component)]
 struct DebugUi;
+
+fn init_debug() {
+    config::test();
+}
 
 #[allow(dead_code, unused_variables)]
 fn debug(

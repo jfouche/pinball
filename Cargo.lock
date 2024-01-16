@@ -3043,6 +3043,8 @@ dependencies = [
  "bevy",
  "bevy-inspector-egui",
  "bevy_rapier3d",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

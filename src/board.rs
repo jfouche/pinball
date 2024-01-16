@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
-use crate::paddle::spawn_paddle;
+use crate::{config, paddle::spawn_paddle};
 
 pub struct BoardPlugin;
 
@@ -17,9 +17,9 @@ pub struct Board;
 impl Board {
     const COLOR: Color = Color::PURPLE;
     const SIZE: Vec3 = Vec3 {
-        x: 20.0,
+        x: 40.0,
         y: 0.2,
-        z: 20.0,
+        z: 40.0,
     };
 
     fn hx() -> f32 {
@@ -53,6 +53,7 @@ fn spawn_board(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    let board_config = config::load_config();
     commands
         .spawn((
             Name::new("BOARD"),
@@ -66,16 +67,8 @@ fn spawn_board(
         ))
         .insert((RigidBody::Fixed, Board::collider()))
         .with_children(|builder| {
-            let positions = [
-                // Vec3::new(0.0, 0.0, 0.0),
-                // Vec3::new(8.0, 0.0, 0.0),
-                Vec3::new(-8.0, 0.0, 8.0),
-                Vec3::new(-8.0, 0.0, -8.0),
-                Vec3::new(8.0, 0.0, -8.0),
-                Vec3::new(8.0, 0.0, 8.0),
-            ];
-            for pos in positions {
-                spawn_paddle(builder, pos, &mut meshes, &mut materials);
+            for pcfg in board_config.paddles.iter() {
+                spawn_paddle(builder, pcfg, &mut meshes, &mut materials);
             }
         });
 }

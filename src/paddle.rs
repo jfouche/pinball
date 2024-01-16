@@ -1,5 +1,8 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
+use serde::{Deserialize, Serialize};
+
+use crate::config::PaddleConfig;
 
 pub struct PaddlePlugin;
 
@@ -9,29 +12,32 @@ impl Plugin for PaddlePlugin {
     }
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+pub enum PaddleType {
+    Left,
+    Right,
+}
+
 #[derive(Clone, Component)]
-pub struct Paddle;
+pub struct Paddle {
+    ptype: PaddleType,
+}
 
 impl Paddle {
-    const SIZE: Vec3 = Vec3::new(5.0, 0.5, 2.0);
+    pub const SIZE: Vec3 = Vec3::new(5.0, 0.5, 2.0);
     /// space between Paddle and board
-    const SPACE: f32 = 0.5;
+    pub const SPACE: f32 = 0.5;
 
-    fn hx() -> f32 {
+    pub fn hx() -> f32 {
         Self::SIZE.x / 2.0
     }
 
-    fn hy() -> f32 {
+    pub fn hy() -> f32 {
         Self::SIZE.y / 2.0
     }
 
-    fn hz() -> f32 {
+    pub fn hz() -> f32 {
         Self::SIZE.z / 2.0
-    }
-
-    fn dx() -> f32 {
-        // -4.0 * Self::hx() / 5.0
-        -Self::hx()
     }
 
     fn shape() -> impl Into<Mesh> {
@@ -41,30 +47,11 @@ impl Paddle {
     fn collider() -> Collider {
         Collider::cuboid(Self::hx(), Self::hy(), Self::hz())
     }
-
-    fn transform(pos: &Vec3) -> Transform {
-        Transform::from_xyz(pos.x + Self::dx(), Self::hy() + Self::SPACE, pos.z)
-    }
-
-    /// Create an joint object, based on :
-    /// - anchor1 (parent position): position on the ground (the `pos` param)
-    /// - anchor2 (paddle position): position of the point of rotation
-    ///
-    fn joint(pos: &Vec3) -> impl Into<GenericJoint> {
-        // parent entity anchor position, forced y at 0
-        let parent_pos = Vec3::new(pos.x, 0.0, pos.z);
-        // paddle anchor position, left border, at [SPACE] height
-        let paddle_pos = Vec3::new(-Self::hx(), -Self::SPACE - Self::hy(), 0.0);
-        RevoluteJointBuilder::new(Vec3::Y)
-            .local_anchor1(parent_pos)
-            .local_anchor2(paddle_pos)
-            .limits([-0.4, 0.4])
-    }
 }
 
 pub fn spawn_paddle(
     builder: &mut ChildBuilder,
-    pos: Vec3,
+    config: &PaddleConfig,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
 ) {
@@ -72,10 +59,12 @@ pub fn spawn_paddle(
     builder
         .spawn((
             Name::new("PADDLE"),
-            Paddle,
+            Paddle {
+                ptype: config.ptype,
+            },
             PbrBundle {
                 mesh: meshes.add(Paddle::shape().into()),
-                transform: Paddle::transform(&pos),
+                transform: config.transform(),
                 material: materials.add(Color::BLUE.into()),
                 ..default()
             },
@@ -85,19 +74,23 @@ pub fn spawn_paddle(
             RigidBody::Dynamic,
             Sleeping::disabled(),
             Paddle::collider(),
-            ImpulseJoint::new(board_entity, Paddle::joint(&pos)),
+            ImpulseJoint::new(board_entity, config.joint()),
         ));
 }
 
-fn move_paddle(mut q_paddles: Query<&mut ImpulseJoint, With<Paddle>>, keys: Res<Input<KeyCode>>) {
+fn move_paddle(mut q_paddles: Query<(&Paddle, &mut ImpulseJoint)>, keys: Res<Input<KeyCode>>) {
     let left = keys.pressed(KeyCode::Left);
-    // let right = keys.pressed(KeyCode::Right);
+    let right = keys.pressed(KeyCode::Right);
 
-    let (velocity, factor) = if left { (300.0, 2.0) } else { (-300.0, 2.0) };
-    for mut impulse_joint in q_paddles.iter_mut() {
+    let factor = 2.0;
+    for (paddle, mut impulse_joint) in q_paddles.iter_mut() {
         if let Some(joint) = impulse_joint.data.as_revolute_mut() {
-            // info!("move_paddle set_motor_velocity({velocity}, {factor})");
-            // joint.set_motor(target_pos, target_vel, stiffness, damping)
+            let velocity = match paddle.ptype {
+                PaddleType::Left if left => 300.0,
+                PaddleType::Left => -300.0,
+                PaddleType::Right if right => -300.0,
+                PaddleType::Right => 300.0,
+            };
             joint.set_motor_velocity(velocity, factor);
         }
     }
