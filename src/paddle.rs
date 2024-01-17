@@ -8,7 +8,7 @@ pub struct PaddlePlugin;
 
 impl Plugin for PaddlePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (move_paddle, set_motor_pos));
+        app.add_systems(Update, move_paddle);
     }
 }
 
@@ -74,6 +74,7 @@ pub fn spawn_paddle(
             RigidBody::Dynamic,
             Sleeping::disabled(),
             Paddle::collider(),
+            ColliderMassProperties::Mass(10.0),
             ImpulseJoint::new(board_entity, config.joint()),
         ));
 }
@@ -82,32 +83,17 @@ fn move_paddle(mut q_paddles: Query<(&Paddle, &mut ImpulseJoint)>, keys: Res<Inp
     let left = keys.pressed(KeyCode::Left);
     let right = keys.pressed(KeyCode::Right);
 
-    let factor = 2.0;
+    let stiffness = 5000.0;
+    let damping = 1.0;
     for (paddle, mut impulse_joint) in q_paddles.iter_mut() {
         if let Some(joint) = impulse_joint.data.as_revolute_mut() {
-            let velocity = match paddle.ptype {
-                PaddleType::Left if left => 300.0,
-                PaddleType::Left => -300.0,
-                PaddleType::Right if right => -300.0,
-                PaddleType::Right => 300.0,
+            let target_pos = match paddle.ptype {
+                PaddleType::Left if left => 0.4,
+                PaddleType::Left => -0.4,
+                PaddleType::Right if right => -0.4,
+                PaddleType::Right => 0.4,
             };
-            joint.set_motor_velocity(velocity, factor);
-        }
-    }
-}
-
-fn set_motor_pos(mut q_paddles: Query<&mut ImpulseJoint, With<Paddle>>, keys: Res<Input<KeyCode>>) {
-    if keys.pressed(KeyCode::Space) {
-        let target_pos = 1.5;
-        let target_vel = 80.0;
-        let stiffness = 30.0;
-        let damping = 2000.0;
-        for mut impulse_joint in q_paddles.iter_mut() {
-            if let Some(joint) = impulse_joint.data.as_revolute_mut() {
-                info!("set_motor({target_pos}, {target_vel}, {stiffness}, {damping})");
-                joint.set_motor_position(target_pos, stiffness, damping);
-                // joint.set_motor_velocity(target_vel, 100.0);
-            }
+            joint.set_motor_position(target_pos, stiffness, damping);
         }
     }
 }

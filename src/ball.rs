@@ -51,7 +51,7 @@ fn spawn_ball(
         .insert((
             RigidBody::Dynamic,
             Collider::ball(BALL_RADIUS),
-            ColliderMassProperties::Mass(10.0),
+            ColliderMassProperties::Mass(20.0),
         ));
 }
 
