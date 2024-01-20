@@ -51,7 +51,6 @@ impl PaddleConfig {
         RevoluteJointBuilder::new(Vec3::Y)
             .local_anchor1(parent_pos)
             .local_anchor2(paddle_pos)
-        // .limits([-0.4, 0.4])
     }
 }
 

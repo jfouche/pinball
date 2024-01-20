@@ -4,6 +4,7 @@ use bevy_rapier3d::prelude::*;
 use crate::{
     config::{self, PinballConfig},
     paddle::spawn_paddle,
+    GameAssets, GameState,
 };
 
 pub struct BoardPlugin;
@@ -11,6 +12,12 @@ pub struct BoardPlugin;
 impl Plugin for BoardPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(config::load_config())
+            .add_systems(OnEnter(GameState::Loading), (load_scene,))
+            .add_systems(
+                Update,
+                (check_if_loaded,).run_if(in_state(GameState::Loading)),
+            )
+            // .add_systems(OnEnter(GameState::Loaded), (spawn_gltf,))
             .add_systems(Startup, spawn_board);
     }
 }
@@ -76,4 +83,25 @@ fn spawn_board(
                 spawn_paddle(builder, pcfg, &mut meshes, &mut materials);
             }
         });
+}
+
+// load the scene from the gltf file
+fn load_scene(asset_server: Res<AssetServer>, mut game_assets: ResMut<GameAssets>) {
+    game_assets.scene = asset_server.load("pinball.glb#Scene0");
+}
+
+// check if the scene is loaded and if so, get the colliders from it
+fn check_if_loaded(
+    mut scenes: ResMut<Assets<Scene>>,
+    mut game_assets: ResMut<GameAssets>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut game_state: ResMut<NextState<GameState>>,
+) {
+    if let Some(scene) = scenes.get_mut(&game_assets.scene) {
+        // get_scene_colliders should be called only once per scene as it will remove the colliders meshes from it
+        // game_assets.colliders =
+        //     get_scene_colliders(&mut meshes, &mut scene.world).expect("Failed to create colliders");
+
+        game_state.set(GameState::Loaded);
+    }
 }
